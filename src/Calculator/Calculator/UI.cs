@@ -7,14 +7,16 @@ namespace Calculator
 {
   public partial class UI : Form
   {
-    private readonly Calculator calculator;
+    private readonly Logic.Calculator calculator;
 
     private bool _isUpdatingText = false;
+
+    private string _lastAdded;
 
     public UI()
     {
       InitializeComponent();
-      calculator = new Calculator();
+      calculator = new Logic.Calculator();
       InitializeContextMenu();
     }
 
@@ -38,7 +40,7 @@ namespace Calculator
 
     private void KeyClear_Click(object sender, System.EventArgs e)
     {
-      UpdateCalcBox(OperationNames.Zero);
+      UpdateCalcBox(Names.Values.Zero);
       calculator.ClearLastCalculation();
       calculator.ClearCalculationStack();
     }
@@ -48,9 +50,10 @@ namespace Calculator
       calculator.ClearLastCalculation();
       historyRichTextBox.Clear();
     }
+
     #endregion
 
-    #region Add Operations To Stack 
+    #region Add Names.Values To Stack 
 
     private void AddCalcOperation(string op)
     {
@@ -59,55 +62,63 @@ namespace Calculator
     }
 
     private void Key1_Click(object sender, System.EventArgs e) =>
-      AddCalcOperation(OperationNames.One);
+      AddCalcOperation(Names.Values.One);
 
     private void Key2_Click(object sender, System.EventArgs e) =>
-      AddCalcOperation(OperationNames.Two);
+      AddCalcOperation(Names.Values.Two);
 
     private void Key3_Click(object sender, System.EventArgs e) =>
-      AddCalcOperation(OperationNames.Three);
+      AddCalcOperation(Names.Values.Three);
 
     private void Key4_Click(object sender, System.EventArgs e) =>
-      AddCalcOperation(OperationNames.Four);
+      AddCalcOperation(Names.Values.Four);
 
     private void Key5_Click(object sender, System.EventArgs e) =>
-      AddCalcOperation(OperationNames.Five);
+      AddCalcOperation(Names.Values.Five);
 
     private void Key6_Click(object sender, System.EventArgs e) =>
-      AddCalcOperation(OperationNames.Six);
+      AddCalcOperation(Names.Values.Six);
 
     private void Key7_Click(object sender, System.EventArgs e) =>
-      AddCalcOperation(OperationNames.Seven);
+      AddCalcOperation(Names.Values.Seven);
 
     private void Key8_Click(object sender, System.EventArgs e) =>
-      AddCalcOperation(OperationNames.Eight);
+      AddCalcOperation(Names.Values.Eight);
 
     private void Key9_Click(object sender, System.EventArgs e) =>
-      AddCalcOperation(OperationNames.Nine);
+      AddCalcOperation(Names.Values.Nine);
 
     private void Key0_Click(object sender, System.EventArgs e) =>
-      AddCalcOperation(OperationNames.Zero);
+      AddCalcOperation(Names.Values.Zero);
+
+    #endregion
+
+    #region Add Names.Symbols to Stack
 
     private void KeyDot_Click(object sender, System.EventArgs e) =>
-      AddCalcOperation(OperationNames.Dot);
+      AddCalcOperation(Names.Symbols.Dot);
 
     private void KeyOpenBracket_Click(object sender, System.EventArgs e) =>
-      AddCalcOperation(OperationNames.LeftBracket);
+      AddCalcOperation(Names.Symbols.LeftBracket);
 
     private void KeyCloseBracket_Click(object sender, System.EventArgs e) =>
-      AddCalcOperation(OperationNames.RightBracket);
+      AddCalcOperation(Names.Symbols.RightBracket);
+
+    #endregion
+
+    #region Add Names.Operations To Stack
 
     private void KeyDivide_Click(object sender, System.EventArgs e) =>
-      AddCalcOperation(OperationNames.Divide);
+      AddCalcOperation(Names.Operations.Divide);
 
     private void KeyMultiply_Click(object sender, System.EventArgs e) =>
-      AddCalcOperation(OperationNames.Multiply);
+      AddCalcOperation(Names.Operations.Multiply);
 
     private void KeySubtract_Click(object sender, System.EventArgs e) =>
-      AddCalcOperation(OperationNames.Subtract);
+      AddCalcOperation(Names.Operations.Subtract);
 
     private void KeyAdd_Click(object sender, System.EventArgs e) =>
-      AddCalcOperation(OperationNames.Add);
+      AddCalcOperation(Names.Operations.Add);
 
     #endregion
 
@@ -116,22 +127,32 @@ namespace Calculator
     private string ParseCalc(string calculation)
     {
       return calculation
-        .Replace(OperationNames.Divide, "÷")
-        .Replace(OperationNames.Multiply, "×");
+        .Replace(Names.Operations.Divide, "÷")
+        .Replace(Names.Operations.Multiply, "×")
+        .Replace(Names.Symbols.Dot, ",");
     }
 
     private string UnParseCalc(string calculation)
     {
       return calculation
-        .Replace("÷", OperationNames.Divide)
-        .Replace("×", OperationNames.Multiply);
+        .Replace("÷", Names.Operations.Divide)
+        .Replace("×", Names.Operations.Multiply)
+        .Replace(",", Names.Symbols.Dot);
     }
 
     private void AppendHistory(string text)
     {
-      historyRichTextBox.AppendText(ParseCalc(text) + "\n");
+      string parsed = ParseCalc(text);
+
+      if (parsed == _lastAdded) return;
+
+      if (!Names.Operations.HasOperations(text)) return;
+
+      historyRichTextBox.AppendText(parsed + "\n");
       historyRichTextBox.SelectAll();
       historyRichTextBox.SelectionAlignment = HorizontalAlignment.Right;
+
+      _lastAdded = parsed;
     }
 
     private void UpdateCalcBox(string text, bool resetSelection = false)

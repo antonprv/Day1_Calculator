@@ -3,9 +3,10 @@
 
 using System;
 using System.Data;
-using System.Linq;
 
-namespace Calculator
+using Calculator.Names;
+
+namespace Calculator.Logic
 {
   internal class Calculator
   {
@@ -31,7 +32,7 @@ namespace Calculator
       {
         ClearLastCalculation();
         ClearCalculationStack();
-        return "0";
+        return Values.Zero;
       }
 
       try

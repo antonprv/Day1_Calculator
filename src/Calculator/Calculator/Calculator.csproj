@@ -47,8 +47,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="OperationNames.cs" />
-    <Compile Include="Calculator.cs" />
+    <Compile Include="Names\Operations.cs" />
+    <Compile Include="Names\Symbols.cs" />
+    <Compile Include="Names\Values.cs" />
+    <Compile Include="Logic\Calculator.cs" />
     <Compile Include="UI.cs">
       <SubType>Form</SubType>
     </Compile>
