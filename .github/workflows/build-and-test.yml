@@ -46,7 +46,7 @@ jobs:
         uses: microsoft/setup-msbuild@v2
 
       # 3. Собираем Программу
-      - name: Build SqlWebService (Release)
+      - name: Build Calculator (Release)
         run: |
           msbuild src\Calculator\Calculator\Calculator.csproj `
             /p:Configuration=Release `
