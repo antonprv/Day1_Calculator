@@ -97,7 +97,6 @@ jobs:
       - name: Create release archives
         run: |
           Compress-Archive -Path dist\Calculator\*     -DestinationPath dist\Calculator-build-${{ github.run_number }}.zip
-          Compress-Archive -Path dist\Calculator\* -DestinationPath dist\Calculator-build-${{ github.run_number }}.zip
           Write-Host "✓ Archives created"
           Get-Item dist\*.zip | Select-Object Name, Length
         shell: pwsh
