@@ -1,0 +1,128 @@
+name: Build & Test SqlWebService
+
+# ────────────────────────────────────────────────────────────────────
+# Права доступа для GITHUB_TOKEN
+# ────────────────────────────────────────────────────────────────────
+permissions:
+  contents: write       # создание релизов и загрузка артефактов
+  issues: write         # управление issue (если потребуется)
+
+# ────────────────────────────────────────────────────────────────────
+# Триггеры
+# ────────────────────────────────────────────────────────────────────
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:          # ручной запуск из интерфейса GitHub
+
+# ────────────────────────────────────────────────────────────────────
+# Переменные окружения
+# ────────────────────────────────────────────────────────────────────
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  SERVICE_PORT: 8080
+  SERVICE_URL: http://localhost:8080/SqlService
+  # Опция для использования Node.js 24 вместо устаревающего Node.js 20
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+# ────────────────────────────────────────────────────────────────────
+# JOB 1: Build — компиляция обоих проектов
+# ────────────────────────────────────────────────────────────────────
+jobs:
+  build:
+    name: Build (.NET Framework 4.7)
+    runs-on: windows-latest          # .NET Framework требует Windows-раннера
+
+    steps:
+      # 1. Получаем исходники
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Настраиваем MSBuild (входит в образ windows-latest)
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      # 3. Собираем Программу
+      - name: Build SqlWebService (Release)
+        run: |
+          msbuild src\Calculator\Calculator\Calculator.csproj `
+            /p:Configuration=Release `
+            /verbosity:minimal `
+            /nologo
+        shell: pwsh
+
+      # 5. Проверяем, что артефакты существуют
+      - name: Verify build artifacts
+        run: |
+          if (-not (Test-Path "src\Calculator\Calculator\Artifacts\Calculator.exe")) {
+            Write-Error "Calculator.exe not found!"
+            exit 1
+          }
+          Write-Host "✓ Artifact present"
+          Get-Item "src\Calculator\Calculator\Artifacts\Calculator.exe" | Select-Object Name, Length, LastWriteTime
+        shell: pwsh
+
+      # 6. Сохраняем артефакты сервиса
+      - name: Upload Calculator artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Calculator-Release
+          path: src\Calculator\Calculator\Artifacts\
+
+# ────────────────────────────────────────────────────────────────────
+# JOB 2: Release — создаём GitHub Release с архивами при каждом пуше
+# ────────────────────────────────────────────────────────────────────
+  release:
+    name: Create GitHub Release
+    runs-on: windows-latest
+    needs: [ build ]
+    # Запускается только при пуше в ветку (не при pull_request)
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Скачиваем ранее собранные артефакты
+      - name: Download Calculator artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: Calculator-Release
+          path: dist/Calculator
+
+      # Упаковываем в ZIP
+      - name: Create release archives
+        run: |
+          Compress-Archive -Path dist\Calculator\*     -DestinationPath dist\Calculator-build-${{ github.run_number }}.zip
+          Compress-Archive -Path dist\Calculator\* -DestinationPath dist\Calculator-build-${{ github.run_number }}.zip
+          Write-Host "✓ Archives created"
+          Get-Item dist\*.zip | Select-Object Name, Length
+        shell: pwsh
+
+      # Публикуем GitHub Release
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Calculator build ${{ github.run_number }}
+          body: |
+            ## Calculator build ${{ github.run_number }}
+
+            ### Состав релиза
+            | Архив | Описание |
+            |-------|---------|
+            | `Calculator-build-${{ github.run_number }}.zip` | Калькулятор (.NET Framework 4.7) |
+
+            ### Быстрый старт
+            1. Распакуйте `Calculator-*.zip`, запустите `Calculator.exe`.
+
+            ### Требования
+            - Windows 7/8/10/11 или Windows Server 2016+
+            - .NET Framework 4.7 Runtime (предустановлен в Windows 10 1903+)
+          files: |
+            dist/Calculator-build-${{ github.run_number }}.zip
+          draft: false
+          prerelease: false
